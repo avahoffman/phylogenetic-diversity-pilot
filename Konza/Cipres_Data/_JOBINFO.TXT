@@ -1,0 +1,14 @@
+Task\ label=Konza_phylogeny
+Task\ ID=1529570
+Tool=RAXMLHPC2_TGB
+created\ on=2018-06-19 08:06:01.0
+JobHandle=NGBW-JOB-RAXMLHPC2_TGB-B0BDE7D66C6E4284AF62FF4646D2558C
+resource=comet
+User\ ID=87057
+User\ Name=avahoffman@iplantcollaborative.org
+email=avamariehoffman@gmail.com
+
+Output=(all_outputfiles,*,UNKNOWN,UNKNOWN,UNKNOWN)
+ChargeFactor=1.000000
+cores=24
+JOBID=17164098

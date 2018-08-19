@@ -1,0 +1,16 @@
+#NEXUS
+begin taxa;
+	dimensions ntax=6;
+	taxlabels
+	one
+	two
+	five
+	three
+	four
+	six
+;
+end;
+
+begin trees;
+	tree [&r] tree_1 = (((one:1.0,two:1.0):1.0,(three:1.0,four:1.0):1.0):1.0,(five:1.0,six:1.0):1.0);
+end;

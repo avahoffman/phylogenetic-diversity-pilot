@@ -1,0 +1,10 @@
+starting log: 13/06/18 03:32
+concat
+in filename: ITS_sequences_KNZ_aligned.fasta
+in filename: TrnL-TrnFspacer_sequences_KNZ_aligned.fasta
+in filename: TrnL_sequences_KNZ_aligned_trimmed.fasta
+in filename: matK_sequences_KNZ_aligned_trimmed.fasta
+in filename: ndhF_sequences_KNZ_aligned_trimmed.fasta
+in filename: psbA_sequences_KNZ_aligned_trimmed.fasta
+in filename: rbcL_sequences_KNZ_aligned_trimmed.fasta
+outfile: KNZ_allgenes_nexus.fasta

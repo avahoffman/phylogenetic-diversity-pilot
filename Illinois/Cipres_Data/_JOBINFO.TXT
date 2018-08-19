@@ -1,0 +1,14 @@
+Task\ label=illinois_tree
+Task\ ID=1551247
+Tool=RAXMLHPC2_TGB
+created\ on=2018-07-12 13:43:23.0
+JobHandle=NGBW-JOB-RAXMLHPC2_TGB-A202B0B6308B43DEAAEE9A51E428A197
+resource=comet
+User\ ID=115379
+User\ Name=Guest-1531428128454
+email=1531428128454
+
+Output=(all_outputfiles,*,UNKNOWN,UNKNOWN,UNKNOWN)
+ChargeFactor=1.000000
+cores=24
+JOBID=17840449

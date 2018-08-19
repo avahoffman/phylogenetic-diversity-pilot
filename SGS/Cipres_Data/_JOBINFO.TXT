@@ -1,0 +1,14 @@
+Task\ label=community_sgs_Sisyalt_1
+Task\ ID=1520255
+Tool=RAXMLHPC2_TGB
+created\ on=2018-06-09 15:12:49.0
+JobHandle=NGBW-JOB-RAXMLHPC2_TGB-93E40C46311547569AB42736C9701BE2
+resource=comet
+User\ ID=87057
+User\ Name=avahoffman@iplantcollaborative.org
+email=avamariehoffman@gmail.com
+
+Output=(all_outputfiles,*,UNKNOWN,UNKNOWN,UNKNOWN)
+ChargeFactor=1.000000
+cores=24
+JOBID=16874055

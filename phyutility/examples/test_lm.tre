@@ -1,0 +1,5 @@
+#NEXUS
+BEGIN TREES;
+	TREE tree0 = (((one:1.0,two:1.0):1.0,(five_0.6:0.6,three:1.0):1.0):1.0,(four_0.4:1.4,six:1.0):1.0);
+END;
+
