@@ -13,7 +13,7 @@
 ## Set working directory
 
 wd <-
-  "/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/Phylogenetic_diversity"
+  "/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/phylogenetic-diversity-pilot"
 setwd(wd)
 
 KNZ <-  read.csv("SpComp\ -\ Genetic\ Diversity\ -\ KNZ\ 2014\ COMPLETED.csv", header = T)
@@ -32,7 +32,7 @@ library(ggplot2)
 library(reshape)
 library(picante)
 library(diverse)
-
+library(codyn)
 
 ###########################################################################################
 ###########################################################################################
@@ -51,7 +51,7 @@ library(diverse)
 ## And this to the end:
 ## end;
 
-community_SGS <- read.nexus("/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/Phylogenetic_diversity/SGS/Cipres_Data/RAxML_bestTree.result")
+community_SGS <- read.nexus("/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/phylogenetic-diversity-pilot/SGS/Cipres_Data/RAxML_bestTree.result")
 community_SGS$edge.length <- round(community_SGS$edge.length, digits = 3)
 #community.drop <- (subtrees(community)[[35]]) # don't want the outgroup
 ggtree(community_SGS) +
@@ -63,7 +63,6 @@ ggsave(width=15,height=8, filename="SGS/Distances_toscale.jpg")
 
 ###########################################################################################
 ## process species comp data
-
 SGS_df <- SGS[,1:5] # just keep the first five columns
 SGS_df <- SGS_df[!(SGS_df$species == "Unk_6-_smallaster"),]
 SGS_df <- SGS_df[!(SGS_df$species == "bare_ground"),]
@@ -97,30 +96,20 @@ rownames(clean_SGS_wide) <- seq(1,30,1)
 tree_SGS <- prune.sample(clean_SGS_wide,community_SGS)
 phylo.div_SGS <- ses.pd(clean_SGS_wide,community_SGS, include.root = F)
 
-## calculate other measures of diversity
-
-## Shannons
-clean_SGS$shan <- ( clean_SGS$X.cover / 100 ) * log( clean_SGS$X.cover / 100 )
-shannon_SGS <- aggregate(shan ~ plot + Block, data=clean_SGS, FUN=sum)
-shannon_SGS$shan <- -1 * shannon_SGS$shan
-
-## Simpsons
-clean_SGS$`n-1` <- clean_SGS$X.cover - 1
-clean_SGS$`nxn-1` <- clean_SGS$`n-1` * clean_SGS$X.cover
-all.simp_SGS <- aggregate(X.cover ~ Block + plot, data=clean_SGS, FUN=sum)
-ind.simp_SGS <- aggregate(`nxn-1` ~ Block + plot, data=clean_SGS, FUN=sum)
-simpson_SGS <- 1 - (ind.simp_SGS$`nxn-1` / (all.simp_SGS$X.cover * (all.simp_SGS$X.cover - 1)))
+## Shannons + Simpsons's
+div_SGS_Shan <- community_diversity(clean_SGS, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "Shannon")
+div_SGS_Simp <- community_diversity(clean_SGS, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "InverseSimpson")
 
 ## Berger Parker
 bp.index_SGS <- diversity(as.matrix(clean_SGS_wide), type = "berger-parker")
 bp.index_SGS <- bp.index_SGS[order(as.numeric(row.names(bp.index_SGS))),]
 
 ## evenness  - would like to use a better metric..
-evenness_SGS <- diversity(as.matrix(clean_SGS_wide, type="ev"))
-evenness_SGS <- evenness_SGS[order(as.numeric(row.names(evenness_SGS))),]
+evenness_SGS_EQ <- community_structure(clean_SGS, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "EQ")
+evenness_SGS_Evar <- community_structure(clean_SGS, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "Evar")
 
 ## concatenate
-total.div_SGS <- cbind(shannon_SGS,simpson_SGS,phylo.div_SGS,bp.index_SGS,evenness_SGS)
+total.div_SGS <- cbind(div_SGS_Shan,div_SGS_Simp,phylo.div_SGS,bp.index_SGS,evenness_SGS_EQ,evenness_SGS_Evar)
 write.csv(total.div_SGS, "DIVERSITY_sgs.csv")
 
 ###########################################################################################
@@ -137,21 +126,21 @@ completedata_SGS <-  subset(completedata_SGS, select=-c(ANGE,Woody))
 completedata_SGS$Graminoids <-  completedata_SGS$Grass
 completedata_SGS$Total <-  completedata_SGS$total.cactus ## exclude cactus mass..
 completedata_SGS$pd.obs.per.spp <- completedata_SGS$pd.obs / completedata_SGS$ntaxa ## calculate phylogenetic distance per species
-df.part_SGS <- subset(completedata_SGS, select=c(Block,plot,BOGR.BOHI,Forbs,Graminoids,Total,pd.obs.per.spp,ntaxa,berger.parker.D,evenness,shan,simpson_SGS))
-mcd_SGS <- melt(df.part_SGS, id.vars = c("Block","plot","pd.obs.per.spp","ntaxa","berger.parker.D","evenness","shan","simpson_SGS"))
+df.part_SGS <- subset(completedata_SGS, select=c(Block,plot,BOGR.BOHI,Forbs,Graminoids,Total,pd.obs.per.spp,richness,berger.parker.D,EQ,Evar,Shannon,InverseSimpson))
+mcd_SGS <- melt(df.part_SGS, id.vars = c("Block","plot","pd.obs.per.spp","richness","berger.parker.D","EQ","Evar","Shannon","InverseSimpson"))
 mcd_SGS <- melt(mcd_SGS, id.vars = c("Block","plot","variable","value"))
 colnames(mcd_SGS) <- c("Block","plot","bio_type","biomass","metric_type","metric")
 
 ## plot all diversity metrics and biomass
 ggplot(data = mcd_SGS,
        aes(x=metric,y=biomass)) +
-  facet_wrap(metric_type~bio_type, scales = "free", nrow = 6 , ncol = 4)+
+  facet_wrap(metric_type~bio_type, scales = "free", nrow = 7 , ncol = 4)+
   geom_smooth(method=lm, se=F) +
   geom_point() +
   theme_classic() +
   xlab("Diversity metric") +
   ylab("Biomass")
-ggsave(filename="Figures/Biomass_v_Diversity_SGS.jpg",height=12,width=10)
+ggsave(filename="Figures/Biomass_v_Diversity_SGS.jpg",height=14,width=10)
 
 ###########################################################################################
 ###########################################################################################
@@ -162,7 +151,7 @@ ggsave(filename="Figures/Biomass_v_Diversity_SGS.jpg",height=12,width=10)
 ###########################################################################################
 ## phylogenetic tree
 
-community_KNZ <- read.nexus("/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/Phylogenetic_diversity/Konza/Cipres_Data/RAxML_bestTree.result")
+community_KNZ <- read.nexus("/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/phylogenetic-diversity-pilot/Konza/Cipres_Data/RAxML_bestTree.result")
 community_KNZ$edge.length <- round(community_KNZ$edge.length, digits = 3)
 ggtree(community_KNZ) +
   geom_tiplab() +
@@ -201,30 +190,20 @@ rownames(clean_KNZ_wide) <- seq(1,30,1)
 tree_KNZ <- prune.sample(clean_KNZ_wide,community_KNZ)
 phylo.div_KNZ <- ses.pd(clean_KNZ_wide,community_KNZ, include.root = F)
 
-## calculate other measures of diversity
-
-## Shannons
-clean_KNZ$shan <- ( clean_KNZ$X.cover / 100 ) * log( clean_KNZ$X.cover / 100 )
-shannon_KNZ <- aggregate(shan ~ plot + Block, data=clean_KNZ, FUN=sum)
-shannon_KNZ$shan <- -1 * shannon_KNZ$shan
-
-## Simpsons
-clean_KNZ$`n-1` <- clean_KNZ$X.cover - 1
-clean_KNZ$`nxn-1` <- clean_KNZ$`n-1` * clean_KNZ$X.cover
-all.simp_KNZ <- aggregate(X.cover ~ Block + plot, data=clean_KNZ, FUN=sum)
-ind.simp_KNZ <- aggregate(`nxn-1` ~ Block + plot, data=clean_KNZ, FUN=sum)
-simpson_KNZ <- 1 - (ind.simp_KNZ$`nxn-1` / (all.simp_KNZ$X.cover * (all.simp_KNZ$X.cover - 1)))
+## Shannons + Simpsons's
+div_KNZ_Shan <- community_diversity(clean_KNZ, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "Shannon")
+div_KNZ_Simp <- community_diversity(clean_KNZ, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "InverseSimpson")
 
 ## Berger Parker
 bp.index_KNZ <- diversity(as.matrix(clean_KNZ_wide), type = "berger-parker")
 bp.index_KNZ <- bp.index_KNZ[order(as.numeric(row.names(bp.index_KNZ))),]
 
 ## evenness  - would like to use a better metric..
-evenness_KNZ <- diversity(as.matrix(clean_KNZ_wide, type="ev"))
-evenness_KNZ <- evenness_KNZ[order(as.numeric(row.names(evenness_KNZ))),]
+evenness_KNZ_EQ <- community_structure(clean_KNZ, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "EQ")
+evenness_KNZ_Evar <- community_structure(clean_KNZ, replicate.var = c("plot","Block"), abundance.var = "X.cover", metric = "Evar")
 
 ## concatenate
-total.div_KNZ <- cbind(shannon_KNZ,simpson_KNZ,phylo.div_KNZ,bp.index_KNZ,evenness_KNZ)
+total.div_KNZ <- cbind(div_KNZ_Shan,div_KNZ_Simp,phylo.div_KNZ,bp.index_KNZ,evenness_KNZ_EQ,evenness_KNZ_Evar)
 write.csv(total.div_KNZ, "DIVERSITY_KNZ.csv")
 
 ###########################################################################################
@@ -241,21 +220,21 @@ completedata_KNZ <-  subset(completedata_KNZ, select=-c(BOGR.BOHI,Cactus,total.c
 completedata_KNZ$Graminoids <-  completedata_KNZ$Grass + completedata_KNZ$ANGE
 completedata_KNZ$Total <- completedata_KNZ$total
 completedata_KNZ$pd.obs.per.spp <- completedata_KNZ$pd.obs / completedata_KNZ$ntaxa ## calculate phylogenetic distance per species
-df.part_KNZ <- subset(completedata_KNZ, select=c(Block,plot,ANGE,Forbs,Graminoids,Woody,Total,pd.obs.per.spp,ntaxa,berger.parker.D,evenness,shan,simpson_KNZ))
-mcd_KNZ <- melt(df.part_KNZ, id.vars = c("Block","plot","pd.obs.per.spp","ntaxa","berger.parker.D","evenness","shan","simpson_KNZ"))
+df.part_KNZ <- subset(completedata_KNZ, select=c(Block,plot,ANGE,Forbs,Graminoids,Woody,Total,pd.obs.per.spp,richness,berger.parker.D,EQ,Evar,Shannon,InverseSimpson))
+mcd_KNZ <- melt(df.part_KNZ, id.vars = c("Block","plot","pd.obs.per.spp","richness","berger.parker.D","EQ","Evar","Shannon","InverseSimpson"))
 mcd_KNZ <- melt(mcd_KNZ, id.vars = c("Block","plot","variable","value"))
 colnames(mcd_KNZ) <- c("Block","plot","bio_type","biomass","metric_type","metric")
 
 ## plot all diversity metrics and biomass
 ggplot(data = mcd_KNZ,
        aes(x=metric,y=biomass)) +
-  facet_wrap(metric_type~bio_type, scales = "free", nrow = 6 , ncol = 5)+
+  facet_wrap(metric_type~bio_type, scales = "free", nrow = 7 , ncol = 5)+
   geom_smooth(method=lm, se=F) +
   geom_point() +
   theme_classic() +
   xlab("Diversity metric") +
   ylab("Biomass")
-ggsave(filename="Figures/Biomass_v_Diversity_KNZ.jpg",height=15,width=14)
+ggsave(filename="Figures/Biomass_v_Diversity_KNZ.jpg",height=17,width=14)
 
 ###########################################################################################
 ###########################################################################################
@@ -266,7 +245,7 @@ ggsave(filename="Figures/Biomass_v_Diversity_KNZ.jpg",height=15,width=14)
 ###########################################################################################
 ## phylogenetic tree
 
-community_ILL <- read.nexus("/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/Phylogenetic_diversity/Illinois/Cipres_Data/RAxML_bestTree.result")
+community_ILL <- read.nexus("/Users/avahoffman/Dropbox/Research/Genetic_Diversity_Pilot/phylogenetic-diversity-pilot/Illinois/Cipres_Data/RAxML_bestTree.result")
 community_ILL$edge.length <- round(community_ILL$edge.length, digits = 3)
 ggtree(community_ILL) +
   geom_tiplab() +
@@ -303,30 +282,20 @@ rownames(clean_ILL_wide) <- seq(1,20,1)
 tree_ILL <- prune.sample(clean_ILL_wide,community_ILL)
 phylo.div_ILL <- ses.pd(clean_ILL_wide,community_ILL, include.root = F)
 
-## calculate other measures of diversity
-
-## Shannons
-clean_ILL$shan <- ( clean_ILL$X.cover / 100 ) * log( clean_ILL$X.cover / 100 )
-shannon_ILL <- aggregate(shan ~ Plot + Block, data=clean_ILL, FUN=sum)
-shannon_ILL$shan <- -1 * shannon_ILL$shan
-
-## Simpsons
-clean_ILL$`n-1` <- clean_ILL$X.cover - 1
-clean_ILL$`nxn-1` <- clean_ILL$`n-1` * clean_ILL$X.cover
-all.simp_ILL <- aggregate(X.cover ~ Block + Plot, data=clean_ILL, FUN=sum)
-ind.simp_ILL <- aggregate(`nxn-1` ~ Block + Plot, data=clean_ILL, FUN=sum)
-simpson_ILL <- 1 - (ind.simp_ILL$`nxn-1` / (all.simp_ILL$X.cover * (all.simp_ILL$X.cover - 1)))
+## Shannons + Simpsons's
+div_ILL_Shan <- community_diversity(clean_ILL, replicate.var = c("Plot","Block"), abundance.var = "X.cover", metric = "Shannon")
+div_ILL_Simp <- community_diversity(clean_ILL, replicate.var = c("Plot","Block"), abundance.var = "X.cover", metric = "InverseSimpson")
 
 ## Berger Parker
 bp.index_ILL <- diversity(as.matrix(clean_ILL_wide), type = "berger-parker")
 bp.index_ILL <- bp.index_ILL[order(as.numeric(row.names(bp.index_ILL))),]
 
 ## evenness  - would like to use a better metric..
-evenness_ILL <- diversity(as.matrix(clean_ILL_wide, type="ev"))
-evenness_ILL <- evenness_ILL[order(as.numeric(row.names(evenness_ILL))),]
+evenness_ILL_EQ <- community_structure(clean_ILL, replicate.var = c("Plot","Block"), abundance.var = "X.cover", metric = "EQ")
+evenness_ILL_Evar <- community_structure(clean_ILL, replicate.var = c("Plot","Block"), abundance.var = "X.cover", metric = "Evar")
 
 ## concatenate
-total.div_ILL <- cbind(shannon_ILL,simpson_ILL,phylo.div_ILL,bp.index_ILL,evenness_ILL)
+total.div_ILL <- cbind(div_ILL_Shan,div_ILL_Simp,phylo.div_ILL,bp.index_ILL,evenness_ILL_EQ,evenness_ILL_Evar)
 write.csv(total.div_ILL, "DIVERSITY_ILL.csv")
 
 ###########################################################################################
@@ -343,21 +312,38 @@ completedata_ILL <-  subset(completedata_ILL, select=-c(OLDLITTER,NEWLITTER,MOSS
 completedata_ILL$Graminoids <-  completedata_ILL$INDGRASS + completedata_ILL$OTHRGRASS
 completedata_ILL$Total <- completedata_ILL$TOTALNOLITTER
 completedata_ILL$pd.obs.per.spp <- completedata_ILL$pd.obs / completedata_ILL$ntaxa ## calculate phylogenetic distance per species
-df.part_ILL <- subset(completedata_ILL, select=c(Block,Plot,INDGRASS,FORBS,Graminoids,Total,pd.obs.per.spp,ntaxa,berger.parker.D,evenness,shan,simpson_ILL))
+df.part_ILL <- subset(completedata_ILL, select=c(Block,Plot,INDGRASS,FORBS,Graminoids,Total,pd.obs.per.spp,richness,berger.parker.D,EQ,Evar,Shannon,InverseSimpson))
 ## weird outlier ..
 df.part_ILL <- df.part_ILL[-9,]
-mcd_ILL <- melt(df.part_ILL, id.vars = c("Block","Plot","pd.obs.per.spp","ntaxa","berger.parker.D","evenness","shan","simpson_ILL"))
+mcd_ILL <- melt(df.part_ILL, id.vars = c("Block","Plot","pd.obs.per.spp","richness","berger.parker.D","EQ","Evar","Shannon","InverseSimpson"))
 mcd_ILL <- melt(mcd_ILL, id.vars = c("Block","Plot","variable","value"))
 colnames(mcd_ILL) <- c("Block","plot","bio_type","biomass","metric_type","metric")
 
 ## plot all diversity metrics and biomass
 ggplot(data = mcd_ILL,
        aes(x=metric,y=biomass)) +
-  facet_wrap(metric_type~bio_type, scales = "free", nrow = 6 , ncol = 4)+
+  facet_wrap(metric_type~bio_type, scales = "free", nrow = 7 , ncol = 4)+
   geom_smooth(method=lm, se=F) +
   geom_point() +
   theme_classic() +
   xlab("Diversity metric") +
   ylab("Biomass")
-ggsave(filename="Figures/Biomass_v_Diversity_ILL.jpg",height=15,width=14)
+ggsave(filename="Figures/Biomass_v_Diversity_ILL.jpg",height=17,width=14)
+
+###########################################################################################
+###########################################################################################
+##
+## Preliminary stats
+##
+###########################################################################################
+###########################################################################################
+
+summary(lm(Total~richness,completedata_KNZ))
+summary(lm(Total~pd.obs.per.spp,completedata_KNZ))
+summary(lm(Total~EQ,completedata_KNZ))
+summary(lm(Total~Evar,completedata_KNZ))
+summary(lm(Total~berger.parker.D,completedata_KNZ))
+summary(lm(Total~Shannon,completedata_KNZ))
+summary(lm(Total~InverseSimpson,completedata_KNZ))
+summary(lm(Total~richness + pd.obs.per.spp + EQ + berger.parker.D, completedata_KNZ))
 
