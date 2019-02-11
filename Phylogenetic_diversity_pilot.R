@@ -18,7 +18,7 @@ setwd(wd)
 
 KNZ <-  read.csv("SpComp\ -\ Genetic\ Diversity\ -\ KNZ\ 2014\ COMPLETED.csv", header = T)
 SGS <- read.csv("SpComp\ -\ Genetic\ Diversity\ -\ SGS\ 2014\ COMPLETED.csv", header = T)
-ILL <- read.csv("spComp_GeneticDiversity_illinois_compiled_blk1removed.csv", header=T)
+#ILL <- read.csv("spComp_GeneticDiversity_illinois_compiled_blk1removed.csv", header=T)
 
 
 ###########################################################################################
@@ -177,6 +177,8 @@ for(i in 1:4){
 }
 colnames(p.df) <- c("bio_type","metric_type","p.val")
 p.df <- p.df[-1,]
+p.df$p.val.adjust <- p.adjust(p.df$p.val,method="BH")
+p.df
 
 mcd_SGS_pval <- merge(mcd_SGS,p.df)
 
@@ -184,8 +186,8 @@ mcd_SGS_pval <- merge(mcd_SGS,p.df)
 ggplot(data = mcd_SGS_pval,
        aes(x=metric,y=biomass)) +
   facet_wrap(metric_type~bio_type, scales = "free", nrow = 7 , ncol = 4)+
-  geom_smooth(data=subset(mcd_SGS_pval,  p.val < 0.05), method = lm, formula = y ~ splines::bs(x, 3), se = FALSE, aes(color=as.numeric(p.val))) +
-  geom_point() +
+  geom_smooth(data=subset(mcd_SGS_pval,  p.val.adjust < 0.05), method = lm, formula = y ~ splines::bs(x, 3), se = FALSE, aes(color=as.numeric(p.val.adjust))) +
+  geom_point(shape=16) +
   theme_classic() +
   xlab("Diversity metric") +
   ylab("Biomass") +
@@ -301,6 +303,8 @@ for(i in 1:5){
 }
 colnames(p.df) <- c("bio_type","metric_type","p.val")
 p.df <- p.df[-1,]
+p.df$p.val.adjust <- p.adjust(p.df$p.val,method="BH")
+
 
 mcd_KNZ_pval <- merge(mcd_KNZ,p.df)
 
@@ -308,8 +312,8 @@ mcd_KNZ_pval <- merge(mcd_KNZ,p.df)
 ggplot(data = mcd_KNZ_pval,
        aes(x=metric,y=biomass)) +
   facet_wrap(metric_type~bio_type, scales = "free", nrow = 7 , ncol = 5)+
-  geom_smooth(data=subset(mcd_KNZ_pval,  p.val < 0.05), method = lm, formula = y ~ splines::bs(x, 3), se = FALSE, aes(color=as.numeric(p.val))) +
-  geom_point() +
+  geom_smooth(data=subset(mcd_KNZ_pval,  p.val.adjust < 0.05), method = lm, formula = y ~ splines::bs(x, 3), se = FALSE, aes(color=as.numeric(p.val.adjust))) +
+  geom_point(shape=1) +
   theme_classic() +
   xlab("Diversity metric") +
   ylab("Biomass") +
@@ -336,7 +340,7 @@ ggplot(data = bothsites,
        aes(x=metric,y=biomass)) +
   facet_wrap(metric_type~bio_type, scales = "free", nrow = 7 , ncol = 5)+
   geom_point(aes(shape=site)) +
-  geom_smooth(data=subset(bothsites,  p.val < 0.05), method = lm, formula = y ~ splines::bs(x, 3), se = FALSE, aes(color=as.numeric(p.val),lty=site)) +
+  geom_smooth(data=subset(bothsites,  p.val.adjust < 0.05), method = lm, formula = y ~ splines::bs(x, 3), se = FALSE, aes(color=as.numeric(p.val.adjust),lty=site)) +
   scale_shape_manual(values=c(1,16)) +
   theme_classic() +
   xlab("Diversity metric") +
