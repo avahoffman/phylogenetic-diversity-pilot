@@ -319,6 +319,35 @@ ggsave(filename="Figures/Biomass_v_Diversity_KNZ.jpg",height=15,width=12)
 ###########################################################################################
 ###########################################################################################
 ##
+## Combined plot
+##
+###########################################################################################
+###########################################################################################
+
+# add a site variable
+mcd_SGS_pval$site <- rep("SGS",nrow(mcd_SGS_pval))
+mcd_KNZ_pval$site <- rep("KNZ",nrow(mcd_KNZ_pval))
+
+bothsites <- as.data.frame(rbind(mcd_SGS_pval,mcd_KNZ_pval))
+# replace bogr/bohi or ange with 'dominant
+bothsites$bio_type <- gsub("BOGR.BOHI","Dominant",bothsites$bio_type)
+bothsites$bio_type <- gsub("ANGE","Dominant",bothsites$bio_type)
+ggplot(data = bothsites,
+       aes(x=metric,y=biomass)) +
+  facet_wrap(metric_type~bio_type, scales = "free", nrow = 7 , ncol = 5)+
+  geom_point(aes(shape=site)) +
+  geom_smooth(data=subset(bothsites,  p.val < 0.05), method = lm, formula = y ~ splines::bs(x, 3), se = FALSE, aes(color=as.numeric(p.val),lty=site)) +
+  scale_shape_manual(values=c(1,16)) +
+  theme_classic() +
+  xlab("Diversity metric") +
+  ylab("Biomass") +
+  guides(color=guide_legend(title="p-value"))
+ggsave(filename="Figures/Biomass_v_Diversity_bothsites.jpg",height=15,width=12)
+
+
+###########################################################################################
+###########################################################################################
+##
 ## Illinois
 ##
 ###########################################################################################
